@@ -2408,7 +2408,20 @@ cleanup_return:
 /* Toggle the "commit-graph" feature; return the previously set state. */
 static int toggle_commit_graph(struct repository *repo, int disable) {
 	int prev = repo->commit_graph_disabled;
-	repo->commit_graph_disabled = disable;
+	static int should_toggle = -1;
+
+	if (should_toggle < 0) {
+		/*
+		 * The in_merge_bases_many() seems to misbehave when
+		 * the commit-graph feature is in use.  Disable it for
+		 * normal users, but keep it enabled when specifically
+		 * testing the feature.
+		 */
+		should_toggle = !git_env_bool("GIT_TEST_COMMIT_GRAPH", 0);
+	}
+
+	if (should_toggle)
+		repo->commit_graph_disabled = disable;
 	return prev;
 }
 
